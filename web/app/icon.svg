@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Favicon CAVI: C roja con "pieza" blanca sobre navy (marca: #E01F26 / #0B2545). -->
+  <rect width="64" height="64" rx="14" fill="#0B2545"/>
+  <path d="M42.3 19.7 A16 16 0 1 0 42.3 44.3" fill="none" stroke="#E01F26" stroke-width="11" stroke-linecap="round"/>
+  <circle cx="45" cy="32" r="6" fill="#FFFFFF"/>
+</svg>

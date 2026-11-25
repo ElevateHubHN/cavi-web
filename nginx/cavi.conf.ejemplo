@@ -1,0 +1,63 @@
+# Ejemplo del bloque de nginx para el sitio de Repuestos CAVI.
+# Reemplazar <dominio> y <ruta-del-repo> (la carpeta donde está el código en el servidor).
+# Los certificados los gestiona el panel del servidor o certbot; aquí solo se referencian.
+
+server {
+    listen 80;
+    server_name <dominio> www.<dominio>;
+    return 301 https://<dominio>$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name <dominio>;
+
+    ssl_certificate     /ruta/al/fullchain.pem;
+    ssl_certificate_key /ruta/al/privkey.pem;
+
+    # Una foto de 5 MB más los datos del formulario.
+    client_max_body_size 6m;
+
+    add_header X-Content-Type-Options nosniff always;
+    add_header Referrer-Policy strict-origin-when-cross-origin always;
+
+    # API: la única ruta que llega al proceso de Node.
+    location /api/ {
+        proxy_pass http://127.0.0.1:3250;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        # TRUST_PROXY=true en api/.env: los límites por IP leen esta cabecera.
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 60s;
+    }
+
+    # Panel de cotizaciones (SPA): toda ruta desconocida vuelve a su index.html.
+    location = /panel {
+        return 301 /panel/;
+    }
+    location /panel/ {
+        alias <ruta-del-repo>/panel/dist/;
+        try_files $uri $uri/ /panel/index.html;
+    }
+    location /panel/assets/ {
+        alias <ruta-del-repo>/panel/dist/assets/;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+
+    # Sitio público exportado por Next: /catalogo se sirve desde catalogo.html.
+    root <ruta-del-repo>/web/out;
+    location /_next/static/ {
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        try_files $uri =404;
+    }
+    location / {
+        try_files $uri $uri.html $uri/ =404;
+    }
+    error_page 404 /404.html;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+}

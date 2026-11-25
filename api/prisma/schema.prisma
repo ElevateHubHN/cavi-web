@@ -1,0 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EstadoCotizacion {
+  recibida
+  en_revision
+  cotizada
+  confirmada
+  entregada
+  cancelada
+}
+
+enum ModoEntrega {
+  envio
+  retiro
+}
+
+enum Canal {
+  sistema
+  whatsapp
+  llamada
+  correo
+  tienda
+}
+
+// confirmar: enlace del correo de confirmación, con su clave temporal.
+// clave_temporal: clave de «¿Olvidaste tu clave?»; su token no se envía ni sirve para confirmar.
+enum TipoTokenCliente {
+  confirmar
+  clave_temporal
+}
+
+enum RolUsuario {
+  admin
+  asesor
+}
+
+enum TipoCorreo {
+  confirmacion
+  clave_temporal
+  cotizacion_lista
+  aviso_solicitud_nueva
+  aviso_cotizacion_aceptada
+  aviso_cotizacion_cancelada
+  aviso_mensaje_contacto
+  bienvenida_usuario_panel
+}
+
+// pendiente: anotado, se envía después de responder al pedido.
+// omitido: no se mandó porque el correo ya llegó a su tope por hora.
+// reemplazado: no salió y después se anotó otro del mismo tipo para la misma cotización.
+enum EstadoCorreo {
+  enviado
+  fallido
+  omitido
+  pendiente
+  reemplazado
+}
+
+model Cliente {
+  id               String         @id @default(uuid()) @db.Uuid
+  correo           String         @unique
+  nombre           String
+  telefono         String
+  empresa          String?
+  rtn              String?
+  correoConfirmado Boolean        @default(false)
+  // Solo la clave propia; null mientras la cuenta no la crea. Las temporales viven en TokenCliente.
+  claveHash        String?
+  creadoEn         DateTime       @default(now())
+  actualizadoEn    DateTime       @updatedAt
+  tokens           TokenCliente[]
+  cotizaciones     Cotizacion[]
+
+  @@map("cliente")
+}
+
+model TokenCliente {
+  id        String           @id @default(uuid()) @db.Uuid
+  clienteId String           @db.Uuid
+  cliente   Cliente          @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  tipo      TipoTokenCliente
+  tokenHash String           @unique
+  // Huella de una clave temporal que vale hasta `venceEn`, aparte de la clave de la cuenta; null cuando se anula.
+  claveHash String?
+  venceEn   DateTime
+  usadoEn   DateTime?
+  creadoEn  DateTime         @default(now())
+
+  @@index([clienteId, tipo])
+  @@map("token_cliente")
+}
+
+model Cotizacion {
+  id                String           @id @default(uuid()) @db.Uuid
+  numero            Int              @unique @default(autoincrement())
+  clienteId         String           @db.Uuid
+  cliente           Cliente          @relation(fields: [clienteId], references: [id], onDelete: Restrict)
+  estado            EstadoCotizacion @default(recibida)
+  nombre            String
+  telefono          String
+  empresa           String?
+  rtn               String?
+  modoEntrega       ModoEntrega
+  departamento      String?
+  ciudad            String?
+  direccion         String?
+  referencia        String?
+  sucursal          String?
+  equipo            String?
+  serie             String?
+  notas             String?
+  fotoArchivo       String?
+  asesorId          String?          @db.Uuid
+  asesor            Usuario?         @relation("CotizacionAsesor", fields: [asesorId], references: [id], onDelete: SetNull)
+  cotizadaPor       Canal?
+  motivoCancelacion String?
+  creadaEn          DateTime         @default(now())
+  cotizadaEn        DateTime?
+  confirmadaEn      DateTime?
+  entregadaEn       DateTime?
+  canceladaEn       DateTime?
+  items             CotizacionItem[]
+  cambios           CambioEstado[]
+  correos           Correo[]
+
+  @@index([clienteId, creadaEn])
+  @@index([estado, creadaEn])
+  @@index([sucursal])
+  @@map("cotizacion")
+}
+
+model CotizacionItem {
+  id             String     @id @default(uuid()) @db.Uuid
+  cotizacionId   String     @db.Uuid
+  cotizacion     Cotizacion @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  orden          Int
+  productoId     String
+  nombre         String
+  numeroParte    String
+  cantidad       Int
+  precioUnitario Decimal?   @db.Decimal(12, 2)
+
+  @@index([cotizacionId, orden])
+  @@map("cotizacion_item")
+}
+
+model CambioEstado {
+  id           String            @id @default(uuid()) @db.Uuid
+  cotizacionId String            @db.Uuid
+  cotizacion   Cotizacion        @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  de           EstadoCotizacion?
+  a            EstadoCotizacion
+  usuarioId    String?           @db.Uuid
+  usuario      Usuario?          @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  canal        Canal
+  nota         String?
+  creadoEn     DateTime          @default(now())
+
+  @@index([cotizacionId, creadoEn])
+  @@map("cambio_estado")
+}
+
+model Usuario {
+  id                  String            @id @default(uuid()) @db.Uuid
+  nombre              String
+  correo              String            @unique
+  claveHash           String
+  rol                 RolUsuario        @default(asesor)
+  debeCambiarClave    Boolean           @default(true)
+  activo              Boolean           @default(true)
+  creadoEn            DateTime          @default(now())
+  cotizacionesTomadas Cotizacion[]      @relation("CotizacionAsesor")
+  cambios             CambioEstado[]
+  mensajesAtendidos   MensajeContacto[]
+
+  @@map("usuario")
+}
+
+model MensajeContacto {
+  id            String    @id @default(uuid()) @db.Uuid
+  nombre        String
+  empresa       String?
+  correo        String
+  telefono      String
+  mensaje       String
+  atendidoEn    DateTime?
+  atendidoPorId String?   @db.Uuid
+  atendidoPor   Usuario?  @relation(fields: [atendidoPorId], references: [id], onDelete: SetNull)
+  creadoEn      DateTime  @default(now())
+
+  @@index([atendidoEn, creadoEn])
+  @@map("mensaje_contacto")
+}
+
+model Suscriptor {
+  id       String   @id @default(uuid()) @db.Uuid
+  correo   String   @unique
+  creadoEn DateTime @default(now())
+
+  @@map("suscriptor")
+}
+
+model Correo {
+  id           String       @id @default(uuid()) @db.Uuid
+  tipo         TipoCorreo
+  para         String
+  cotizacionId String?      @db.Uuid
+  cotizacion   Cotizacion?  @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
+  estado       EstadoCorreo
+  error        String?
+  // Mensaje cifrado mientras está pendiente, para reintentarlo si la API se reinicia; se borra al terminar.
+  contenido    String?
+  // Cuándo un proceso lo tomó para enviarlo: solo el que lo cambia de null a una fecha lo envía.
+  tomadoEn     DateTime?
+  creadoEn     DateTime     @default(now())
+
+  @@index([para, tipo, creadoEn])
+  @@index([cotizacionId, creadoEn])
+  @@index([estado, creadoEn])
+  @@map("correo")
+}

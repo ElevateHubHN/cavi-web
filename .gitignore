@@ -1,0 +1,137 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Informes de diagnóstico de Node
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Datos de ejecución
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Librerías instrumentadas por jscoverage/JSCover
+lib-cov
+
+# Cobertura de pruebas
+coverage
+*.lcov
+
+# Cobertura de pruebas de nyc
+.nyc_output
+
+# Temporales de Grunt
+.grunt
+
+# Dependencias de Bower
+bower_components
+
+# Plantillas de node-waf
+.lock-wscript
+
+# Módulos nativos compilados
+build/Release
+
+# Dependencias
+node_modules/
+jspm_packages/
+
+# Dependencias de Snowpack
+web_modules/
+
+# Caché de TypeScript
+*.tsbuildinfo
+
+# Caché de npm
+.npm
+
+# Caché de ESLint
+.eslintcache
+
+# Caché de Stylelint
+.stylelintcache
+
+# Caché de Microbundle
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Historial del REPL de Node
+.node_repl_history
+
+# Salida de `npm pack`
+*.tgz
+
+# Archivo de integridad de Yarn
+.yarn-integrity
+
+# Variables de entorno
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Caché de Parcel
+.cache
+.parcel-cache
+
+# Build de Next.js
+.next/
+out/
+
+# Build de Nuxt.js
+.nuxt
+dist
+
+# Gatsby
+.cache/
+
+# Build de VuePress
+.vuepress/dist
+
+# Serverless Webpack
+.serverless/
+
+# Caché de FuseBox
+.fusebox/
+
+# DynamoDB local
+.dynamodb/
+
+# Tern
+.tern-port
+
+# VS Code
+.vscode/
+.vscode/settings.json
+.vscode/tasks.json
+.vscode/launch.json
+.vscode/extensions.json
+.vscode/keybindings.json
+.vscode/*.code-snippets
+
+# JetBrains IDEs
+.idea/
+
+# Archivos del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Playwright
+.playwright-mcp/
+playwright-report/
+test-results/
+playwright-cache/
+
+# API: fotos subidas, temporales de pruebas y registros
+api/archivos/
+api/tmp/
+api/log/
