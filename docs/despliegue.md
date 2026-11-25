@@ -7,7 +7,8 @@ en el puerto 3250, y nginx le pasa todo lo que empieza con `/api/`.
 
 ### 1. Requisitos
 
-- Node.js 22.23.4 o más reciente (las versiones anteriores tienen un fallo de seguridad).
+- Node.js 24 LTS, en su última versión (24.22.3 a la fecha). Ver «Versión de Node.js» al final.
+- PM2, para mantener la API en marcha: `npm install -g pm2`.
 - PostgreSQL.
 - nginx con certificado HTTPS para el dominio.
 
@@ -100,37 +101,30 @@ npm ci --prefix panel && (cd panel && npm run build)    # deja el panel en panel
 
 `prisma migrate deploy` crea las tablas en la base de datos.
 
-### 6. Dejar la API en marcha
+### 6. Dejar la API en marcha con PM2
 
-La API se inicia con `node dist/server.js` desde la carpeta `api/`. Tiene que correr como
-**un solo proceso**, porque los límites de seguridad por IP y el control de los correos
-viven en su memoria; dos copias a la vez llevarían cuentas separadas.
-
-Para que arranque con el servidor y se reinicie si se cae, se puede usar systemd. Ejemplo
-de `/etc/systemd/system/cavi-api.service`:
-
-```ini
-[Unit]
-Description=API de Repuestos CAVI
-After=network.target postgresql.service
-
-[Service]
-WorkingDirectory=/srv/cavi-web/api
-ExecStart=/usr/bin/node dist/server.js
-Restart=on-failure
-User=<usuario del sitio>
-MemoryMax=400M
-
-[Install]
-WantedBy=multi-user.target
-```
+PM2 inicia la API, la reinicia si se cae y la vuelve a levantar cuando se reinicia el
+servidor.
 
 ```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now cavi-api
+cd /srv/cavi-web/api
+pm2 start dist/server.js --name cavi-api --max-memory-restart 300M
+pm2 save
+pm2 startup        # muestra un comando; copiarlo y ejecutarlo una vez
 ```
 
+La API tiene que correr como **un solo proceso**: no usar `-i` ni el modo cluster de PM2.
+Los límites de seguridad por IP y el control de los correos viven en su memoria, y dos
+copias llevarían cuentas separadas.
+
+`pm2 start` se ejecuta desde `api/` porque la API lee su configuración de `api/.env` en
+la carpeta donde arranca.
+
 Comprobar que responde: `curl -s http://127.0.0.1:3250/api/health` debe dar `{"ok":true}`.
+
+**Si el servidor comparte PM2 con otras aplicaciones:** antes de `pm2 save`, revisar con
+`pm2 ls` que todas estén como deben. `pm2 save` guarda la lista completa, y una aplicación
+que esté detenida en ese momento no vuelve a arrancar cuando se reinicie el servidor.
 
 ### 7. nginx
 
@@ -157,7 +151,7 @@ privado. Al entrar al panel, el sistema le pide crear su propia clave.
 - `https://<dominio>/logo-cavi-correo.png` carga, porque los correos toman el logo de ahí.
 - Enviar una solicitud de prueba con un correo propio. Deben llegar la confirmación y el
   aviso a `CORREO_AVISOS_CAVI`. Después, cancelarla desde el portal.
-- `systemctl status cavi-api` muestra el servicio activo.
+- `pm2 ls` muestra `cavi-api` en línea (`online`).
 
 ## Actualizar a una versión nueva
 
@@ -170,14 +164,32 @@ Después se repite el paso 5 («Compilar»), que también aplica los cambios pen
 base de datos, y se reinicia la API:
 
 ```bash
-sudo systemctl restart cavi-api
+pm2 reload cavi-api
 ```
 
 Si la compilación falla, no se reinicia la API: sigue corriendo la versión anterior.
 
 ## Si algo sale mal
 
-- Registros de la API: `journalctl -u cavi-api -n 200`.
+- Registros de la API: `pm2 logs cavi-api`.
 - Correos que no salieron: en el panel, en el detalle de cada cotización, sección
   Correos. Ahí se ve el motivo y el botón para reenviar.
 - La API corre como un solo proceso. No se debe levantar una segunda copia.
+
+## Versión de Node.js
+
+Revisado el 25 de noviembre de 2026 contra las versiones oficiales de nodejs.org:
+
+| Rama | Última versión | Soporte hasta | Uso |
+|---|---|---|---|
+| 26 (LTS activa) | 26.13.1 | abril de 2029 | La más reciente. El sistema no se probó con ella. |
+| **24 (LTS)** | **24.22.3** | abril de 2028 | **Recomendada.** Pasan todas las pruebas, compilan las tres partes y la API arranca. |
+| 22 (LTS en mantenimiento) | 22.23.5 | abril de 2027 | Funciona, pero termina su soporte pronto. |
+
+Las tres versiones de la tabla incluyen la actualización de seguridad del 11 de noviembre de
+2026, que corrige 16 fallos (7 de gravedad alta en http, http2 y tls). **Cualquier versión
+anterior a esas tiene fallos conocidos**, incluida la 22.23.4.
+
+Node.js publica actualizaciones de seguridad cada pocas semanas. Conviene revisar
+https://nodejs.org/en/blog/vulnerability y actualizar dentro de la misma rama (por ejemplo,
+de 24.22.3 a 24.22.4). Después de actualizar Node.js: `pm2 update` y `pm2 reload cavi-api`.

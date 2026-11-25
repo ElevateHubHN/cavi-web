@@ -23,12 +23,12 @@ cancelada.
 | Carpeta | Qué es | Tecnología |
 |---|---|---|
 | `web/` | Sitio público y portal de clientes | Next.js, exportado como archivos estáticos |
-| `api/` | Cotizaciones, cuentas, correos, contacto y boletín | Node.js 22, Fastify, Prisma y PostgreSQL |
+| `api/` | Cotizaciones, cuentas, correos, contacto y boletín | Node.js 24, Fastify, Prisma y PostgreSQL |
 | `panel/` | Panel de CAVI, en `/panel/` | React y Vite |
 | `nginx/` | Ejemplo de configuración del servidor web | nginx |
 
 En el servidor, nginx sirve el sitio y el panel como archivos y pasa todo lo que empieza
-con `/api/` a la API, que corre como un único proceso de Node.js.
+con `/api/` a la API, que corre como un único proceso de Node.js administrado por PM2.
 
 Los productos del catálogo están en el código (`web/lib/products.ts`), no en la base de
 datos: para agregar o cambiar uno se edita ese archivo y se vuelve a desplegar.
@@ -53,7 +53,7 @@ otro de 3 correos de cuenta por hora a una misma dirección.
 
 ## Trabajar en una computadora
 
-Requisitos: Node.js 22 y PostgreSQL. Para ver los correos sin enviarlos de verdad se usa
+Requisitos: Node.js 24 y PostgreSQL. Para ver los correos sin enviarlos de verdad se usa
 [Mailpit](https://mailpit.axllent.org/), que los recibe en `127.0.0.1:1025` y los muestra
 en `http://127.0.0.1:8025`.
 
