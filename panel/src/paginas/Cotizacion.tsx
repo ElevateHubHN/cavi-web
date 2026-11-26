@@ -15,6 +15,7 @@ import {
   lempirasDeCentavos,
   MOTIVOS_CANCELACION,
   numeroCT,
+  numeroDesdeTexto,
   ORDEN_ESTADOS,
   precioATexto,
   textoCambio,
@@ -46,8 +47,8 @@ function SelectorCanal() {
 
 export function Cotizacion() {
   const params = useParams();
-  const numero = Number(params.numero);
-  const valido = Number.isSafeInteger(numero) && numero > 0;
+  const numero = numeroDesdeTexto(params.numero) ?? 0;
+  const valido = numero > 0;
   const toast = useToast();
   const { refrescarResumen } = useSesion();
   const { datos: c, setDatos, error, cargando, recargar } = useCarga<DetalleCotizacion | null>(

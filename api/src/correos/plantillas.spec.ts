@@ -76,7 +76,7 @@ describe('plantillas de correo', () => {
     expect(c.asunto).toBe(`Solicitud nueva CT-1051 · José ${MALO} · 2 repuestos`);
     expect(c.html).toContain('Cabezal 6x4 · con foto');
     expect(c.html).not.toContain('>RTN<');
-    expect(c.html).toContain('href="https://repcavi.example/panel/cotizaciones/CT-1051"');
+    expect(c.html).toContain('href="https://repcavi.example/panel/cotizaciones/1051"');
     expect(c.html).toContain('Aviso automático del sitio');
     expect(c.nombreRemitente).toBe('Sitio de CAVI');
     sinScript(c);

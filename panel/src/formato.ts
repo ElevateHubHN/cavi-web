@@ -56,6 +56,14 @@ export const MOTIVOS_CANCELACION = [
 
 export const numeroCT = (n: number): string => `CT-${n}`;
 
+/** Número de cotización desde «1042» o «CT-1042»; los correos ya enviados enlazan con el prefijo. */
+export function numeroDesdeTexto(texto: string | undefined): number | null {
+  const hallado = /^(?:CT-)?(\d{1,9})$/i.exec((texto ?? '').trim());
+  if (!hallado?.[1]) return null;
+  const n = Number(hallado[1]);
+  return Number.isSafeInteger(n) && n > 0 ? n : null;
+}
+
 /** «L 45,090.50» a partir de centavos enteros. */
 export function lempirasDeCentavos(centavos: number): string {
   const negativo = centavos < 0;

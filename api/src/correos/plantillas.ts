@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client';
+import { numeroDesdeTexto } from '../dominio/cotizaciones.js';
 
 export interface Contenido {
   asunto: string;
@@ -128,7 +129,9 @@ function armar(ctx: ContextoCorreo, asunto: string, cuerpo: string, texto: strin
   return { asunto, html: marco(ctx, cuerpo, paraCavi), texto: texto + pieTexto(ctx, paraCavi), paraCavi, nombreRemitente: destino === 'cavi' ? 'Sitio de CAVI' : null };
 }
 
-export const enlacePanelCotizacion = (ctx: ContextoCorreo, numero: string) => `${ctx.sitio}/panel/cotizaciones/${encodeURIComponent(numero)}`;
+/** Enlace al detalle en el panel, con el número solo («1042»), igual que los enlaces de la lista. */
+export const enlacePanelCotizacion = (ctx: ContextoCorreo, numero: string) =>
+  `${ctx.sitio}/panel/cotizaciones/${encodeURIComponent(String(numeroDesdeTexto(numero) ?? numero))}`;
 
 export function confirmacion(ctx: ContextoCorreo, d: { nombre: string; enlace: string; claveTemporal: string; numero: string | null }): Contenido {
   const asunto = d.numero ? `Confirma tu correo para seguir tu cotización ${d.numero}` : 'Confirma tu correo para entrar a tu portal de CAVI';
